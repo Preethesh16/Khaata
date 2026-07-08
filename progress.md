@@ -47,6 +47,14 @@
 - **`./gradlew assembleDebug` → BUILD SUCCESSFUL.** APK at `app/build/outputs/apk/debug/app-debug.apk` (~62 MB, includes LiteRT LLM engine native libs).
 - Re-checked `origin/person-b`: still absent. Merging `person-a` → `main` and pushing. **Deepthi: branch `person-b` off latest `main`; everything above is done — pick up demo rehearsal, real-device testing, and google-services.json on your machine (see README-TESTING section at bottom).**
 
+### 2026-07-08 20:05 — Person B (Deepthi)
+- Prompt used: "now i am person B and complete all the phases in one shot … even if person A ka work is blocking u check it again and again and pull merge and continue".
+- We built in parallel without seeing each other's pushes: while A was on `person-a`, B independently implemented the **entire app** on `person-b-deepthi` (pushed; build green — 69 MB APK). Different internals: text-pipeline Gemini (`firebase-vertexai` + strict-JSON action contract), `BillViewModel`, nav-compose, `strings.xml`.
+- On fetch, found A's finished tree already on `main`. **Merge decision: `main` keeps A's implementation** (real Live API native audio + `FunctionDeclaration`s is the stronger demo story; conditional google-services plugin; version catalog). B's tree stays on `person-b-deepthi` as reference + fallback (the text-based Gemini path is a good plan-B if the Live API preview is flaky at the venue).
+- Merged `person-b-deepthi` → `main` with `-s ours` (records lineage, keeps A's code), bringing over: `README.md`, `person2.md` (rewritten), this entry, and **removing the stray `.claude/settings.local.json.tmp.*` file** A accidentally committed.
+- **Verified A's `main` builds green on B's machine** (Snapdragon/ARM64 laptop): installed JDK 17 (Windows ARM64) + Android SDK at `C:\tools`; build runs Windows-side — from WSL: `cmd.exe /c "set JAVA_HOME=C:\tools\jdk17&& gradlew.bat assembleDebug"`. Fresh APK 64 MB at 20:00.
+- Remaining before demo day = configuration only: real `google-services.json` (A), Gemma weights on phone (A), offline Hindi STT + TTS models on phone (B), ADB test (both), rehearsal ×3 (B).
+
 ---
 
 ## HOW TO TEST & CONNECT THE GOOGLE STACK (read me, Deepthi)
