@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Khaata</string>
+    <string name="tap_to_speak">बोलो अपना order · Tap to speak</string>
+    <string name="listening">सुन रहा हूँ… Listening…</string>
+    <string name="scan">SCAN</string>
+    <string name="done">DONE</string>
+    <string name="online">ONLINE</string>
+    <string name="offline">OFFLINE</string>
+    <string name="total">TOTAL</string>
+    <string name="empty_bill">बिल खाली है · Bill is empty\nMic दबाकर बोलिए</string>
+    <string name="low_stock">LOW STOCK</string>
+    <string name="new_bill">नया बिल · New Bill</string>
+</resources>
