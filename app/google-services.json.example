@@ -1,0 +1,20 @@
+{
+  "_INSTRUCTIONS": "Go to https://console.firebase.google.com → create project 'Khaata' → Add Android app with package 'com.khaata.app' → enable 'Firebase AI Logic' (Build with Gemini) → download the real google-services.json → place it at app/google-services.json (same folder as this file, without the .example suffix). Both laptops need this file.",
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "khaata-placeholder",
+    "storage_bucket": "khaata-placeholder.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": { "package_name": "com.khaata.app" }
+      },
+      "oauth_client": [],
+      "api_key": [{ "current_key": "REPLACE_ME" }],
+      "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+    }
+  ],
+  "configuration_version": "1"
+}
