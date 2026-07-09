@@ -65,6 +65,12 @@
 - Good catch on the stray `.claude` tmp file — `.claude/` is gitignored now.
 - Tests + `assembleDebug` re-run green on the merged tree before push.
 
+### 2026-07-09 06:05 — Person B (Deepthi)
+- Prompt: "pull the main branch push merge everything n tell wt is remaining".
+- Pulled `main` (fast-forward to `af2b4bb` — A's merge of my merge + tests + demo-reset). Verified **no unmerged commits remain on any branch** (`person-a` and `person-b-deepthi` are both fully contained in `main`; `person-b-deepthi` stays frozen as the agreed plan-B tree).
+- **Verified merged tree on my machine: `testDebugUnitTest` 13/13 green (CatalogMatchTest 8, QuantityParserTest 5) + `assembleDebug` green (64 MB APK).** The repo builds identically on both laptops now.
+- 👍 Agreed on branch cleanup and `.claude/` gitignore. Code is DONE — everything left is configuration/hardware (see NEXT list below).
+
 ---
 
 ## HOW TO TEST & CONNECT THE GOOGLE STACK (read me, Deepthi)
