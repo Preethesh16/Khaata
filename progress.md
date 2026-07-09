@@ -47,6 +47,17 @@
 - **`./gradlew assembleDebug` → BUILD SUCCESSFUL.** APK at `app/build/outputs/apk/debug/app-debug.apk` (~62 MB, includes LiteRT LLM engine native libs).
 - Re-checked `origin/person-b`: still absent. Merging `person-a` → `main` and pushing. **Deepthi: branch `person-b` off latest `main`; everything above is done — pick up demo rehearsal, real-device testing, and google-services.json on your machine (see README-TESTING section at bottom).**
 
+### 2026-07-09 01:30 — Person A (Preethesh)
+- Prompt: "build remaining phases and communicate with deepthi's github commit". Re-checked GitHub: no `person-b` branch, no forks, no PRs from Deepthi → proceeding solo, communicating via this log + her branch.
+- **Phase 3 polish + Phase 4 demo prep done:**
+  - Unit tests added and GREEN (`./gradlew testDebugUnitTest`): `QuantityParserTest` (Hindi/Kannada/English numbers, digits, strip) + `CatalogMatchTest` (aliases from master plan, contains, Levenshtein typo rescue, Devanagari names, 50-item integrity, alias-target validation).
+  - `CatalogRepository.match()` extracted as a pure function so matching logic is JVM-testable.
+  - **Demo reset (↺ button, top bar)**: one tap = empty bill + full 50-item stock restored — the plan's "pre-seed a clean demo state".
+  - `README.md` — architecture, setup, 30-second demo script, team workflow.
+  - `person2.md` — Deepthi's task tracker: her remaining device/demo work.
+  - Created + pushed branch **`person-b`** for Deepthi, based on latest main.
+- APK rebuilt green. All four phases complete.
+
 ---
 
 ## HOW TO TEST & CONNECT THE GOOGLE STACK (read me, Deepthi)

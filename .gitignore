@@ -12,3 +12,4 @@ captures/
 models/*.task
 models/*.litertlm
 models/*.bin
+.claude/settings.local.json

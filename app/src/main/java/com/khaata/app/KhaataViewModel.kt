@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.khaata.app.agent.KhaataAgent
 import com.khaata.app.agent.OmniFlashManager
 import com.khaata.app.data.BillLine
+import com.khaata.app.data.CatalogSeeder
 import com.khaata.app.data.Item
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -73,6 +74,15 @@ class KhaataViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearBill() {
         viewModelScope.launch { agent.tools.clearBill() }
+    }
+
+    /** Pre-seed a clean demo state: empty bill + full catalog stock (Phase 4, demo prep). */
+    fun resetDemo() {
+        viewModelScope.launch {
+            agent.tools.clearBill()
+            khaataApp.db.itemDao().insertAll(CatalogSeeder.CATALOG)
+            agent.catalog.refresh()
+        }
     }
 
     fun finishBill() {

@@ -20,6 +20,13 @@ class CatalogRepository(private val db: AppDatabase) {
 
     suspend fun fuzzyMatch(input: String): Item? {
         if (catalog.isEmpty()) refresh()
+        return match(catalog, input)
+    }
+
+    companion object {
+
+        /** Pure matching core — also exercised directly by JVM unit tests. */
+        fun match(catalog: List<Item>, input: String): Item? {
         val normalized = input.lowercase(Locale.ROOT).trim()
         if (normalized.isBlank()) return null
 
@@ -57,9 +64,8 @@ class CatalogRepository(private val db: AppDatabase) {
             .minByOrNull { it.second }
             ?.takeIf { it.second <= 3 }
             ?.first
-    }
+        }
 
-    companion object {
         val ALIASES = mapOf(
             "parle" to "Parle-G", "parle g" to "Parle-G", "gluco" to "Parle-G", "biscuit" to "Parle-G",
             "maggi" to "Maggi Noodles", "noodles" to "Maggi Noodles", "maggie" to "Maggi Noodles",

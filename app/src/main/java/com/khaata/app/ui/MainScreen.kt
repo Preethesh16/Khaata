@@ -80,6 +80,9 @@ fun MainScreen(viewModel: KhaataViewModel) {
                 Spacer(Modifier.weight(1f))
                 Text("KHAATA", style = MaterialTheme.typography.titleLarge, color = Saffron)
                 Spacer(Modifier.weight(1f))
+                TextButton(onClick = { viewModel.resetDemo() }) {
+                    Text("↺", fontSize = 24.sp, color = TextSecondary)
+                }
                 TextButton(onClick = { viewModel.clearBill() }) {
                     Text("🗑️", fontSize = 24.sp)
                 }
