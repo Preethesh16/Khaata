@@ -56,7 +56,12 @@ the Google stack into ONE coherent pipeline:
      session.startAudioConversation(functionCallHandler)
    - The model calls OUR 7 billing tools (FunctionDeclarations) directly.
 
-2. GEMMA 3n E4B ON-DEVICE (file: gemma-3n-E4B-it-int4.task, 4.41 GB)
+2. GEMMA 3n ON-DEVICE (E4B int4 = 4.41 GB, E2B int4 = 3.14 GB)
+   - RAM RULE (learned on a real device): E4B needs a flagship-RAM phone
+     (>= 10 GB free); on a 6-8 GB phone Android kills the app with
+     LOW_MEMORY during load — use E2B there. Check with:
+     adb shell cat /proc/meminfo | head -1
+   - Both load from the SAME path; zero code change to swap.
    - Offline brain. Runs via MediaPipe LLM Inference / LiteRT
      (dependency com.google.mediapipe:tasks-genai).
    - Parses the shopkeeper's utterance into structured ITEM|QTY lines,
@@ -208,10 +213,12 @@ the Google stack into ONE coherent pipeline:
    ~/Android/Sdk/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
    # "-r" replaces an existing install, keeping data
 
- STEP 5 — push the Gemma offline model (one-time, phone needs ~5 GB free):
+ STEP 5 — push the Gemma offline model (one-time, phone needs ~4-5 GB free):
+   # FIRST check phone RAM: adb shell cat /proc/meminfo | head -1
+   #   >= 10 GB -> E4B weights ok; 6-8 GB -> use E2B weights (3.14 GB)
    ~/Android/Sdk/platform-tools/adb shell mkdir -p /data/local/tmp/llm
    ~/Android/Sdk/platform-tools/adb push models/gemma.task /data/local/tmp/llm/gemma.task
-   # 4.41 GB — takes several minutes over USB. Survives app reinstalls.
+   # Takes several minutes over USB. Survives app reinstalls.
    # Without it, offline mode still works via the rule-based parser.
 
  STEP 6 — first-run prep on the phone (IMPORTANT, do this EARLY on wifi):

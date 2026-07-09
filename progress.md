@@ -96,6 +96,12 @@
 - Google's MDD downloader is lazy about actually fetching the hi-IN pack (tried force-running its jobs via jobscheduler; still pending). **Do the same prep on the demo phone EARLY**: install app → tap mic once on wifi → leave it plugged in on wifi for a while → verify hi-IN works in airplane mode. If hi-IN pack never lands, en-IN fallback carries the demo.
 - E2E voice→bill confirmation still pending (phone was unplugged mid-test); UI/DB/TTS all verified working.
 
+### 2026-07-09 23:35 — Person A (Preethesh)
+- **APK installed on A's phone (Realme RMX3998) via USB** — app launches, UI pixel-perfect (screenshot-verified: ONLINE badge, bill list, mic, SCAN/DONE). Note: Realme blocks `adb pm grant`; permissions must be tapped manually on first mic/camera use.
+- Pushed E4B weights to phone → **app KILLED by Android: `reason=LOW_MEMORY` at RSS 1.8 GB during model load.** Root cause: this phone has **5.7 GB usable RAM — Gemma 3n E4B (4.4 GB) does not fit.** E4B needs a flagship-RAM device.
+- **Decision: switch offline model to Gemma 3n E2B int4 (3.14 GB)** — same Gemma 3n family (story unchanged), sized for 6–8 GB phones. E4B deleted from laptop + phone; E2B downloading now → will `adb push` to the same path `/data/local/tmp/llm/gemma.task` (code needs NO change — it loads whatever is at that path).
+- **Deepthi: check the demo phone's RAM before pushing weights** (`adb shell cat /proc/meminfo | head -1`): ≥ 10 GB free RAM → E4B ok; 6–8 GB → use E2B; either way the rule-parser fallback keeps the demo alive.
+
 ---
 
 ## HOW TO TEST & CONNECT THE GOOGLE STACK (read me, Deepthi)
