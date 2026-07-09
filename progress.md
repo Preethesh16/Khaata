@@ -47,16 +47,23 @@
 - **`./gradlew assembleDebug` → BUILD SUCCESSFUL.** APK at `app/build/outputs/apk/debug/app-debug.apk` (~62 MB, includes LiteRT LLM engine native libs).
 - Re-checked `origin/person-b`: still absent. Merging `person-a` → `main` and pushing. **Deepthi: branch `person-b` off latest `main`; everything above is done — pick up demo rehearsal, real-device testing, and google-services.json on your machine (see README-TESTING section at bottom).**
 
-### 2026-07-09 01:30 — Person A (Preethesh)
-- Prompt: "build remaining phases and communicate with deepthi's github commit". Re-checked GitHub: no `person-b` branch, no forks, no PRs from Deepthi → proceeding solo, communicating via this log + her branch.
-- **Phase 3 polish + Phase 4 demo prep done:**
-  - Unit tests added and GREEN (`./gradlew testDebugUnitTest`): `QuantityParserTest` (Hindi/Kannada/English numbers, digits, strip) + `CatalogMatchTest` (aliases from master plan, contains, Levenshtein typo rescue, Devanagari names, 50-item integrity, alias-target validation).
-  - `CatalogRepository.match()` extracted as a pure function so matching logic is JVM-testable.
-  - **Demo reset (↺ button, top bar)**: one tap = empty bill + full 50-item stock restored — the plan's "pre-seed a clean demo state".
-  - `README.md` — architecture, setup, 30-second demo script, team workflow.
-  - `person2.md` — Deepthi's task tracker: her remaining device/demo work.
-  - Created + pushed branch **`person-b`** for Deepthi, based on latest main.
-- APK rebuilt green. All four phases complete.
+### 2026-07-08 20:05 — Person B (Deepthi)
+- Prompt used: "now i am person B and complete all the phases in one shot … even if person A ka work is blocking u check it again and again and pull merge and continue".
+- We built in parallel without seeing each other's pushes: while A was on `person-a`, B independently implemented the **entire app** on `person-b-deepthi` (pushed; build green — 69 MB APK). Different internals: text-pipeline Gemini (`firebase-vertexai` + strict-JSON action contract), `BillViewModel`, nav-compose, `strings.xml`.
+- On fetch, found A's finished tree already on `main`. **Merge decision: `main` keeps A's implementation** (real Live API native audio + `FunctionDeclaration`s is the stronger demo story; conditional google-services plugin; version catalog). B's tree stays on `person-b-deepthi` as reference + fallback (the text-based Gemini path is a good plan-B if the Live API preview is flaky at the venue).
+- Merged `person-b-deepthi` → `main` with `-s ours` (records lineage, keeps A's code), bringing over: `README.md`, `person2.md` (rewritten), this entry, and **removing the stray `.claude/settings.local.json.tmp.*` file** A accidentally committed.
+- **Verified A's `main` builds green on B's machine** (Snapdragon/ARM64 laptop): installed JDK 17 (Windows ARM64) + Android SDK at `C:\tools`; build runs Windows-side — from WSL: `cmd.exe /c "set JAVA_HOME=C:\tools\jdk17&& gradlew.bat assembleDebug"`. Fresh APK 64 MB at 20:00.
+- Remaining before demo day = configuration only: real `google-services.json` (A), Gemma weights on phone (A), offline Hindi STT + TTS models on phone (B), ADB test (both), rehearsal ×3 (B).
+
+### 2026-07-09 01:40 — Person A (Preethesh)
+- Prompt: "build remaining phases and communicate with deepthi's github commit".
+- **Phase 3 polish + Phase 4 demo prep built on `person-a`:**
+  - Unit tests, GREEN (`./gradlew testDebugUnitTest`): `QuantityParserTest` (Hindi/Kannada/English numbers, digits, strip) + `CatalogMatchTest` (master-plan aliases, contains-match, Levenshtein typo rescue, Devanagari names, 50-item catalog integrity, alias-target validation). `CatalogRepository.match()` extracted as a pure function to make it JVM-testable.
+  - **Demo reset (↺ button, top bar)**: one tap = empty bill + full 50-item stock — the plan's "pre-seed a clean demo state".
+- Mid-push, discovered **Deepthi's `person-b-deepthi` had landed and was merged to `main`** (aff1922). Merge decision acknowledged and agreed: `main` keeps the Live-API implementation, your text-pipeline stays on `person-b-deepthi` as plan-B. Resolved my merge by keeping your `README.md` + `person2.md` and combining both progress logs (this file); my app-side additions (tests + demo reset) are retained on top since your merge kept A's app tree.
+- Deleted my redundant `person-b` branch (you're on `person-b-deepthi`; one branch per person, no confusion).
+- Good catch on the stray `.claude` tmp file — `.claude/` is gitignored now.
+- Tests + `assembleDebug` re-run green on the merged tree before push.
 
 ---
 
