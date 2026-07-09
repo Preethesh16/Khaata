@@ -49,6 +49,7 @@ fun CameraScreen(viewModel: KhaataViewModel) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val imageCapture = remember { ImageCapture.Builder().build() }
     val pendingConfirmation by viewModel.pendingScanConfirmation.collectAsState()
+    val mode by viewModel.cameraMode.collectAsState()
 
     Box(Modifier.fillMaxSize()) {
         AndroidView(
@@ -95,7 +96,10 @@ fun CameraScreen(viewModel: KhaataViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Product ko frame mein rakho",
+                if (mode == com.khaata.app.CameraMode.BILL)
+                    "Product ko frame mein rakho (bill mein judega)"
+                else
+                    "Product ko frame mein rakho (stock mein judega)",
                 color = Color.White,
                 fontSize = 20.sp
             )

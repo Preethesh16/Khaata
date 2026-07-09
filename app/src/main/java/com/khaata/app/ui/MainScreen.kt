@@ -70,6 +70,7 @@ fun MainScreen(viewModel: KhaataViewModel) {
                 .padding(horizontal = 16.dp)
         ) {
             // ── Zone 1: status bar ──
+            val languageState by viewModel.language.collectAsState()
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -79,6 +80,32 @@ fun MainScreen(viewModel: KhaataViewModel) {
                 ModeBadge(isOnline)
                 Spacer(Modifier.weight(1f))
                 Text("KHAATA", style = MaterialTheme.typography.titleLarge, color = Saffron)
+                Spacer(Modifier.weight(1f))
+                Surface(
+                    color = CardBg,
+                    shape = RoundedCornerShape(20.dp),
+                    onClick = { viewModel.cycleLanguage() }
+                ) {
+                    Text(
+                        "🌐 ${languageState.label}",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        fontSize = 16.sp,
+                        color = Saffron
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = { viewModel.screen.value = Screen.INVENTORY }) {
+                    Text("📦 Inventory", fontSize = 18.sp, color = TextSecondary)
+                }
+                TextButton(onClick = { viewModel.screen.value = Screen.INSIGHTS }) {
+                    Text("📊 Hisaab", fontSize = 18.sp, color = TextSecondary)
+                }
                 Spacer(Modifier.weight(1f))
                 TextButton(onClick = { viewModel.resetDemo() }) {
                     Text("↺", fontSize = 24.sp, color = TextSecondary)
@@ -201,7 +228,7 @@ fun MainScreen(viewModel: KhaataViewModel) {
                 Spacer(Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Button(
-                        onClick = { viewModel.screen.value = Screen.CAMERA },
+                        onClick = { viewModel.openCamera(com.khaata.app.CameraMode.BILL) },
                         colors = ButtonDefaults.buttonColors(containerColor = CardBg),
                         shape = RoundedCornerShape(16.dp)
                     ) {

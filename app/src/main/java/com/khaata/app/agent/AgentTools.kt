@@ -1,6 +1,7 @@
 package com.khaata.app.agent
 
 import com.khaata.app.data.AppDatabase
+import com.khaata.app.data.Bill
 import com.khaata.app.data.BillLine
 import com.khaata.app.data.CatalogRepository
 import kotlinx.serialization.json.JsonObject
@@ -9,13 +10,17 @@ import kotlinx.serialization.json.put
 
 /**
  * The 7 agent tools. Both Gemini Live (online) and Gemma (offline) call these —
- * same functions, different brains. Results are JsonObjects so they can be fed
- * straight back to the model as FunctionResponseParts.
+ * same functions, different brains. All bill operations target the currently
+ * OPEN bill (one bill per customer; DONE closes it, a new one opens on demand).
  */
 class AgentTools(
     private val db: AppDatabase,
     private val catalog: CatalogRepository
 ) {
+
+    /** The open bill's id, creating a fresh bill if none is open. */
+    suspend fun currentBillId(): Long =
+        db.billDao().getOpenBill()?.billId ?: db.billDao().createBill(Bill())
 
     suspend fun lookupPrice(itemName: String, quantity: Double): JsonObject {
         val item = catalog.fuzzyMatch(itemName)
@@ -42,9 +47,11 @@ class AgentTools(
                 put("success", false)
                 put("message", "Unknown itemId $itemId")
             }
+        val billId = currentBillId()
         val totalPrice = item.unitPrice * quantity
         db.billDao().insert(
             BillLine(
+                billId = billId,
                 itemId = item.id,
                 itemName = item.nameHindi,
                 quantity = quantity,
@@ -56,7 +63,7 @@ class AgentTools(
             put("success", true)
             put("itemName", item.nameEnglish)
             put("lineTotal", totalPrice)
-            put("billTotal", db.billDao().getTotal())
+            put("billTotal", db.billDao().getTotal(billId))
         }
     }
 
@@ -83,7 +90,8 @@ class AgentTools(
     }
 
     suspend fun getSummary(): JsonObject {
-        val lines = db.billDao().getCurrentBill()
+        val billId = currentBillId()
+        val lines = db.billDao().getLines(billId)
         return buildJsonObject {
             put("itemCount", lines.size)
             put("total", lines.sumOf { it.totalPrice })
@@ -91,7 +99,8 @@ class AgentTools(
     }
 
     suspend fun removeLastItem(): JsonObject {
-        val last = db.billDao().getLastLine()
+        val billId = currentBillId()
+        val last = db.billDao().getLastLine(billId)
             ?: return buildJsonObject {
                 put("success", false)
                 put("message", "Bill is empty")
@@ -102,12 +111,19 @@ class AgentTools(
         return buildJsonObject {
             put("success", true)
             put("removedItem", last.itemName)
-            put("newTotal", db.billDao().getTotal())
+            put("newTotal", db.billDao().getTotal(billId))
         }
     }
 
     suspend fun clearBill(): JsonObject {
-        db.billDao().clearCurrentBill()
+        db.billDao().clearLines(currentBillId())
         return buildJsonObject { put("success", true) }
+    }
+
+    /** Close the open bill (customer done, bill archived) — used by the DONE flow. */
+    suspend fun closeBill(customerName: String): Long? {
+        val open = db.billDao().getOpenBill() ?: return null
+        db.billDao().closeBill(open.billId, customerName.ifBlank { "Customer" })
+        return open.billId
     }
 }

@@ -31,4 +31,10 @@ interface ItemDao {
 
     @Query("SELECT COUNT(*) FROM items")
     suspend fun count(): Int
+
+    @Query("SELECT COALESCE(MAX(id), 0) FROM items")
+    suspend fun maxId(): Int
+
+    @Query("SELECT * FROM items WHERE stockQty < :threshold ORDER BY stockQty ASC")
+    fun observeLowStock(threshold: Double = 3.0): Flow<List<Item>>
 }

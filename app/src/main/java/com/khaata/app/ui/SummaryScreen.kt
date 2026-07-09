@@ -41,6 +41,7 @@ import java.util.Locale
 fun SummaryScreen(viewModel: KhaataViewModel) {
     val billLines by viewModel.billLines.collectAsState()
     val total by viewModel.billTotal.collectAsState()
+    val customerName by viewModel.customerName.collectAsState()
     val context = LocalContext.current
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
@@ -86,7 +87,16 @@ fun SummaryScreen(viewModel: KhaataViewModel) {
                     color = Saffron
                 )
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
+
+            androidx.compose.material3.OutlinedTextField(
+                value = customerName,
+                onValueChange = { viewModel.customerName.value = it },
+                label = { Text("Customer ka naam (optional)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(16.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(

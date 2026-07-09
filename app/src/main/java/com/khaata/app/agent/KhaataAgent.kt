@@ -51,6 +51,9 @@ class KhaataAgent(
     private val _agentMessage = MutableStateFlow("")
     val agentMessage: StateFlow<String> = _agentMessage
 
+    /** Active billing language — drives STT recognition and TTS voice. */
+    @Volatile var language: AppLanguage = AppLanguage.HINDI
+
     fun warmUp() {
         scope.launch {
             catalog.refresh()
@@ -93,6 +96,7 @@ class KhaataAgent(
     private fun startOffline() {
         _state.value = AgentState.ListeningOffline
         speechInput.startListening(
+            languageTag = language.sttTag,
             onResult = { utterance ->
                 _agentMessage.value = "Suna: \"$utterance\""
                 scope.launch { processOfflineUtterance(utterance) }
@@ -201,7 +205,17 @@ class KhaataAgent(
     private fun speakAndShow(message: String) {
         _agentMessage.value = message
         // Online mode: Gemini Live speaks its own audio; TTS only for offline/scan flows
-        if (_state.value !is AgentState.ListeningOnline) tts.speak(message)
+        if (_state.value !is AgentState.ListeningOnline) tts.speak(message, language.ttsLocale)
+    }
+
+    /** Camera → identify a product for INVENTORY (no bill changes). */
+    suspend fun identifyForStock(frame: Bitmap): OmniFlashManager.ProductIdentification? {
+        _state.value = AgentState.Processing
+        return try {
+            omniFlash.identifyProduct(frame)?.takeIf { it.confidence >= OmniFlashManager.CONFIRM_THRESHOLD }
+        } finally {
+            _state.value = AgentState.Idle
+        }
     }
 
     private fun rupees(amount: Double): String =

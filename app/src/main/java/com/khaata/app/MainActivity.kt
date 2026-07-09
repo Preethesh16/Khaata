@@ -9,6 +9,8 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.khaata.app.ui.CameraScreen
+import com.khaata.app.ui.InsightsScreen
+import com.khaata.app.ui.InventoryScreen
 import com.khaata.app.ui.MainScreen
 import com.khaata.app.ui.SummaryScreen
 import com.khaata.app.ui.theme.KhaataTheme
@@ -31,6 +33,8 @@ class MainActivity : ComponentActivity() {
                     Screen.MAIN -> MainScreen(viewModel)
                     Screen.CAMERA -> CameraScreen(viewModel)
                     Screen.SUMMARY -> SummaryScreen(viewModel)
+                    Screen.INVENTORY -> InventoryScreen(viewModel)
+                    Screen.INSIGHTS -> InsightsScreen(viewModel)
                 }
             }
         }

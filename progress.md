@@ -102,6 +102,17 @@
 - **Decision: switch offline model to Gemma 3n E2B int4 (3.14 GB)** — same Gemma 3n family (story unchanged), sized for 6–8 GB phones. E4B deleted from laptop + phone; E2B downloading now → will `adb push` to the same path `/data/local/tmp/llm/gemma.task` (code needs NO change — it loads whatever is at that path).
 - **Deepthi: check the demo phone's RAM before pushing weights** (`adb shell cat /proc/meminfo | head -1`): ≥ 10 GB free RAM → E4B ok; 6–8 GB → use E2B; either way the rule-parser fallback keeps the demo alive.
 
+### 2026-07-10 00:00 — Person A (Preethesh)
+- Prompt: "it only works for hindi, i want all other languages + inventory details + add price/stock + photo to detect stock + separate customer bills + inventory-used page + camera check".
+- **v2 FEATURE DROP (built, tested, installed on A's phone):**
+  - **Language switcher** — 🌐 chip in top bar cycles हिंदी → ಕನ್ನಡ → EN; drives offline STT locale AND TTS voice (`AppLanguage.kt`; Gemini Live was already multilingual).
+  - **Separate customer bills** — new `Bill` entity (Room v2, destructive migration): every customer gets their own bill; DONE + "NAYI BILL" closes it (with optional customer name field on the summary screen) and archives it; agent tools now target the open bill.
+  - **📦 Inventory screen** — full item list (price/unit/stock, red when low), tap to edit, ➕ ADD ITEM dialog (name/price/stock/unit), **📷 SCAN TO STOCK**: camera identifies a product → prefilled editable dialog → saves into inventory (existing item opens for restock edit; unknown product becomes a new item).
+  - **📊 Insights ("Aaj ka hisaab") screen** — today's revenue card, AAJ BIKA (sold-today per item: qty + ₹), BHARNA HAI (restock list, stock < 3), CUSTOMER BILLS history (name/time/items/total, open bill marked "chalu").
+  - **Camera VERIFIED on device** — logcat: `CameraState OPEN, error=null`, camera device connected to com.khaata.app. Scan overlay + mode captions render.
+  - Gemma **E2B** stable on the phone (E4B OOM'd — see previous entry). Build + 13/13 tests green; APK reinstalled via USB.
+- **Deepthi: pull main and rebuild** — DB schema bumped to v2 (old installs wipe data on first launch, catalog reseeds automatically). Demo script unchanged; new judge-candy: scan-to-stock + aaj-ka-hisaab.
+
 ---
 
 ## HOW TO TEST & CONNECT THE GOOGLE STACK (read me, Deepthi)
