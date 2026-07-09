@@ -1,0 +1,306 @@
+================================================================================
+KHAATA — COMPLETE PROJECT BRIEF
+Fresh-context handoff: everything a new AI model (or teammate) needs to know.
+Google DeepMind Bangalore Hackathon | July 11, 2026 | WeWork Roshni Tech Hub
+Team: Preethesh (Person A, branch person-a) + Deepthi (Person B, person-b-deepthi)
+Repo: github.com/Preethesh16/Khaata (SSH pushes, no AI co-author trailers)
+================================================================================
+
+
+1. THE PROBLEM STATEMENT
+--------------------------------------------------------------------------------
+India has 65+ million kirana shops (small family-run grocery stores). Their
+billing reality:
+  - Paper notebooks ("khaata" literally means account ledger in Hindi)
+  - The shopkeeper's hands are never free — serving 5 customers at once
+  - Many speak Hindi/Kannada, not English; many are not smartphone-literate
+  - Internet in tier-2 market lanes is patchy or absent
+  - Existing POS apps require tapping through screens — nobody uses them
+  - Billing data is cash-business-sensitive; owners don't want it in a cloud
+
+KHAATA is the answer: a local-first Android VOICE agent. The shopkeeper just
+TALKS — "do kilo cheeni, ek Parle-G, teen Maggi" — and the app builds an
+itemized bill, decrements stock, and speaks confirmation back in Hindi.
+It works FULLY OFFLINE when connectivity drops. A camera scan can also add
+products. If a 60-year-old shopkeeper can't use it in 10 seconds, we redesign.
+
+
+2. THE DIFFERENTIATOR (why this wins)
+--------------------------------------------------------------------------------
+Every other team picks ONE Google AI tool and builds around it. Khaata chains
+the Google stack into ONE coherent pipeline:
+
+  DUAL-MODE VOICE BRAIN:
+    ONLINE  -> Gemini Live API   (real-time voice, function calling)
+    OFFLINE -> Gemma 3n on-device (same function calls, zero internet)
+  The app watches connectivity and switches brains AUTOMATICALLY.
+  The shopkeeper never notices the switch. Airplane mode IS the demo:
+  we put the phone in airplane mode in front of the judges and it still bills.
+
+  Other differentiators:
+  - No backend server AT ALL. Firebase AI Logic SDK calls Gemini directly
+    from the app. Two students built and can deploy the whole thing.
+  - Privacy by construction: offline mode = data never leaves the device.
+  - Production-real: Apache-2.0 Gemma, free Firebase tier, Room DB.
+    Could pilot in 100 Mangalore shops tomorrow.
+  - The demo is 30 seconds and needs no explanation.
+
+
+3. GOOGLE TOOLS USED (all five, chained, not a checklist)
+--------------------------------------------------------------------------------
+1. GEMINI LIVE API (model "gemini-live-2.5-flash-preview")
+   - Online voice mode. Full-duplex audio streaming: mic audio up, model's
+     spoken audio back. Native barge-in. 70+ languages, handles Hinglish.
+   - Called via the Firebase AI Logic Android SDK ("firebase-ai" artifact):
+     Firebase.ai(backend = GenerativeBackend.googleAI()).liveModel(...)
+     session.startAudioConversation(functionCallHandler)
+   - The model calls OUR 7 billing tools (FunctionDeclarations) directly.
+
+2. GEMMA 3n E4B ON-DEVICE (file: gemma-3n-E4B-it-int4.task, 4.41 GB)
+   - Offline brain. Runs via MediaPipe LLM Inference / LiteRT
+     (dependency com.google.mediapipe:tasks-genai).
+   - Parses the shopkeeper's utterance into structured ITEM|QTY lines,
+     which drive the SAME 7 tools as online mode.
+   - Weights load from /data/local/tmp/llm/gemma.task (adb-pushed).
+   - SAFETY NET: if weights are missing/slow, a deterministic rule-based
+     parser (regex + Hindi number words + fuzzy catalog match) takes over.
+     The offline demo can NEVER die.
+
+3. FIREBASE AI LOGIC (the platform glue)
+   - Project "khaata-kirana", Android app com.khaata.app registered.
+   - Enabled APIs: generativelanguage.googleapis.com (Gemini Developer API),
+     firebasevertexai.googleapis.com (Firebase AI Logic), firebaseml.
+   - google-services.json is GITIGNORED (public repo, API-key abuse risk).
+     Get it from Preethesh directly, or:
+     firebase apps:sdkconfig ANDROID 1:887731890383:android:b0d451123a9954fc232fba --project khaata-kirana
+
+4. OMNI FLASH / GEMINI FLASH VISION (model "gemini-2.5-flash")
+   - The wildcard: point the camera at a product packet -> CameraX captures
+     a frame -> Gemini vision returns strict JSON
+     {productName, quantity, unit, confidence}
+   - Confidence gates: >=0.7 auto-add to bill; 0.4-0.7 ask "Yeh X hai?";
+     <0.4 say "couldn't identify, please speak the item".
+   - Feeds the SAME tool pipeline as voice. One brain, three input modes.
+
+5. AI-ASSISTED BUILD WORKFLOW (AI Studio / Antigravity role in the plan)
+   - The app was scaffolded and wired with AI agents driving the build,
+     two agents (Person A + Person B) working on separate git branches,
+     communicating exclusively through commits and progress.md.
+
+   Supporting Android/Google tech: Kotlin, Jetpack Compose (Material 3),
+   MVVM + StateFlow, Room (SQLite), CameraX, Android SpeechRecognizer
+   (on-device STT for offline mode), Android TextToSpeech (Hindi TTS).
+
+
+4. ARCHITECTURE (what runs where)
+--------------------------------------------------------------------------------
+  ┌───────────────────────── KHAATA ANDROID APP ──────────────────────────┐
+  │  UI (Jetpack Compose)                                                 │
+  │   MainScreen  = ONLINE/OFFLINE badge + animated bill list +           │
+  │                 pulsing 96dp mic + SCAN + DONE + low-stock warning    │
+  │                 + demo-reset (↺) button                               │
+  │   CameraScreen = CameraX viewfinder + scan overlay + confirm dialog   │
+  │   SummaryScreen = itemized total + SHARE (WhatsApp text) + NAYI BILL  │
+  │                                                                       │
+  │  KhaataViewModel — StateFlows: billLines, billTotal, lowStockItems,   │
+  │                    isOnline, screen; observes Room reactively         │
+  │                                                                       │
+  │  KhaataAgent (THE ORCHESTRATOR)                                       │
+  │   startListening() -> ConnectivityObserver.activeMode()               │
+  │      ├─ GEMINI_LIVE   -> LiveApiManager (Firebase AI Logic session)   │
+  │      └─ GEMMA_OFFLINE -> SpeechInputManager (on-device STT)           │
+  │                          -> OfflineModelManager (Gemma or rule parser)│
+  │   scanProduct(bitmap) -> OmniFlashManager -> confidence gate          │
+  │   All paths converge on AgentTools (the 7 tools below)                │
+  │   TtsManager speaks confirmations (offline + scan flows;              │
+  │   in online mode Gemini Live speaks with its own voice)               │
+  │                                                                       │
+  │  AgentTools — 7 functions, SHARED by online & offline brains:         │
+  │   lookup_price(itemName, qty)  fuzzy-match + price + stock check      │
+  │   add_to_bill(itemId, qty)     insert BillLine, return bill total     │
+  │   update_stock(itemId, qty)    decrement, lowStockWarning if < 3      │
+  │   check_stock(itemName)        read-only stock query                  │
+  │   get_summary()                item count + total                     │
+  │   remove_last_item()           correction flow, restores stock        │
+  │   clear_bill()                 new customer                           │
+  │                                                                       │
+  │  Data layer (Room DB "khaata.db")                                     │
+  │   Item(id, nameHindi, nameKannada, nameEnglish, unitPrice, unit,      │
+  │        stockQty) — 50 kirana items pre-seeded (CatalogSeeder):        │
+  │        Atta, Cheeni, Dals, Rice, Oils, Parle-G, Maggi, Dairy Milk,    │
+  │        Horlicks, Surf Excel, Colgate, Milk, Eggs, Tea, sabzi, etc.    │
+  │   BillLine(lineId, itemId, itemName, quantity, unit, totalPrice,      │
+  │        addedAt) — persists across app kills / power cuts              │
+  │   CatalogRepository.match() — pure function, fuzzy matching chain:    │
+  │        exact -> contains -> 60-entry alias map ("parle"->Parle-G,     │
+  │        "cheeni"->sugar, "tel"->oil...) -> Levenshtein distance <= 3   │
+  │   QuantityParser — "do"=2 "teen"=3 "adha"=0.5 "paav"=0.25 "dedh"=1.5, │
+  │        Kannada (ondu/eradu/mooru), English, digits                    │
+  └───────────────────────────────────────────────────────────────────────┘
+
+  FILE MAP (app/src/main/java/com/khaata/app/):
+    agent/  KhaataAgent.kt, LiveApiManager.kt, OfflineModelManager.kt,
+            OmniFlashManager.kt, AgentTools.kt, QuantityParser.kt,
+            ConnectivityObserver.kt, SpeechInputManager.kt, TtsManager.kt
+    data/   Entities.kt, ItemDao.kt, BillDao.kt, AppDatabase.kt,
+            CatalogSeeder.kt, CatalogRepository.kt
+    ui/     MainScreen.kt, CameraScreen.kt, SummaryScreen.kt, theme/Theme.kt
+    root:   MainActivity.kt, KhaataViewModel.kt, KhaataApp.kt
+  TESTS (app/src/test/): QuantityParserTest.kt (5), CatalogMatchTest.kt (8)
+    -> ./gradlew testDebugUnitTest  = 13/13 green on both laptops
+
+  BUILD SYSTEM: Gradle KTS + version catalog (gradle/libs.versions.toml).
+    AGP 8.10.1, Kotlin 2.1.20, Compose BOM 2025.05, Room 2.7.1 (KSP),
+    CameraX 1.4.2, firebase-bom 33.16.0 (firebase-ai), tasks-genai 0.10.24.
+    minSdk 26, target/compileSdk 36. google-services plugin applied
+    CONDITIONALLY — the project builds even without google-services.json
+    (online mode just won't work until the file is present).
+
+  UI DESIGN RULES: deep saffron #FF6B00 on dark, nothing under 18sp
+  (bill items 24sp), high contrast for sunlight, Hindi labels alongside
+  English, every added item slides in animated.
+
+
+5. HOW THE APP WORKS (user's point of view)
+--------------------------------------------------------------------------------
+ 1. Launch. Catalog auto-seeds on first run. Badge shows ONLINE (green) or
+    OFFLINE (orange). Bill area says "Bolo apna order".
+ 2. Tap the big saffron mic. Speak: "do kilo cheeni aur ek Parle-G".
+ 3. ONLINE: Gemini Live hears the audio stream, calls lookup_price ->
+    add_to_bill -> update_stock per item, and SPEAKS confirmation back.
+    OFFLINE: on-device STT transcribes -> Gemma (or rule parser) extracts
+    items -> same tools -> Android TTS speaks "Cheeni 2 — 80 rupaye".
+ 4. Each item slides into the bill list; TOTAL updates; stock ticks down;
+    red warning strip appears if any stock < 3.
+ 5. Corrections: say "hatao"/"remove" -> last item removed, stock restored.
+    "khatam"/"bas"/"total" -> spoken summary. "nayi bill" -> fresh customer.
+ 6. Or tap SCAN: point camera at a packet -> Gemini vision identifies it ->
+    auto-adds (or asks "Yeh Maggi hai?" if unsure).
+ 7. Tap DONE: summary screen — itemized bill, total, item count, SHARE as
+    text (WhatsApp-ready), NAYI BILL to start over.
+ 8. ↺ button (top bar) = demo reset: empty bill + full 50-item stock.
+
+
+6. HOW TO BUILD & INSTALL ON A PHONE VIA USB (step by step)
+--------------------------------------------------------------------------------
+ PREREQUISITES on the computer:
+   - JDK 17, Android SDK (Linux box: /home/infinity/Android/Sdk;
+     Deepthi's Windows/ARM64 laptop: C:\tools\jdk17 + SDK, build with
+     cmd.exe: set JAVA_HOME=C:\tools\jdk17 && gradlew.bat assembleDebug)
+   - local.properties containing: sdk.dir=<path-to-Android-SDK>
+   - app/google-services.json in place (see section 3.3) for online mode.
+
+ STEP 1 — enable Developer Mode on the phone:
+   Settings -> About phone -> tap "Build number" 7 times
+   -> Settings -> Developer options -> enable "USB debugging"
+
+ STEP 2 — connect phone via USB cable, then on the computer:
+   cd ~/Projects/Khaata
+   ~/Android/Sdk/platform-tools/adb devices
+   # phone shows a popup "Allow USB debugging?" -> tick Always allow -> OK
+   # re-run adb devices: it must say "<serial>  device" (not "unauthorized")
+
+ STEP 3 — build the APK:
+   ./gradlew assembleDebug
+   # output: app/build/outputs/apk/debug/app-debug.apk (~64 MB)
+
+ STEP 4 — install:
+   ~/Android/Sdk/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
+   # "-r" replaces an existing install, keeping data
+
+ STEP 5 — push the Gemma offline model (one-time, phone needs ~5 GB free):
+   ~/Android/Sdk/platform-tools/adb shell mkdir -p /data/local/tmp/llm
+   ~/Android/Sdk/platform-tools/adb push models/gemma.task /data/local/tmp/llm/gemma.task
+   # 4.41 GB — takes several minutes over USB. Survives app reinstalls.
+   # Without it, offline mode still works via the rule-based parser.
+
+ STEP 6 — first-run prep on the phone (IMPORTANT, do this EARLY on wifi):
+   - Open Khaata, grant Microphone + Camera permissions.
+   - Tap the mic once while on wifi: if the Hindi offline speech pack is
+     missing, the app now self-triggers its download (Deepthi's fix for
+     LANGUAGE_PACK_ERROR 13; newer Google app removed the manual menu).
+     Leave the phone plugged in on wifi for a while so the pack lands.
+     Until it does, the app auto-falls back to en-IN recognition
+     (Hinglish still parses fine).
+   - Verify: airplane mode ON -> badge flips OFFLINE -> speak an order.
+
+ TROUBLESHOOTING:
+   - adb shows "unauthorized" -> unlock phone, accept the popup.
+   - adb shows nothing -> try another cable/port; check USB mode is not
+     "charge only" (pick File transfer); adb kill-server && adb devices.
+   - Mic does nothing offline -> speech pack still downloading; wait,
+     or demo in en-IN.
+   - DEMO DAY RULE: pre-install the APK; do NOT rely on live ADB during
+     judging.
+
+
+7. THE 30-SECOND DEMO SCRIPT (Deepthi delivers)
+--------------------------------------------------------------------------------
+ "This is a kirana shop in tier-2 India. No English. Patchy internet."
+ [Airplane mode ON — show the judges the orange OFFLINE badge]
+ "The shopkeeper just talks."
+ [Tap mic] "Do kilo cheeni, ek Parle-G, teen Maggi."
+ [Bill builds line by line, stock ticks down, TTS confirms in Hindi]
+ "Itemized bill. Stock updated. All on-device. Zero internet."
+ [Back online, point camera at a packet] "Or just scan."
+ [Auto-identifies, adds to bill]
+ "65 million kirana shops in India. None of them have this."
+ [Show total. Done.]
+
+ JUDGE Q&A AMMO:
+ - Why not a cloud chatbot? Venue wifi isn't guaranteed in a market lane,
+   and cash businesses don't want billing data leaving the device.
+ - Why not existing POS apps? They need free hands and literacy. Voice is
+   the natural interface; it only became possible on-device with Gemma.
+ - Dialects/code-mixing? Gemini Live: 70+ languages. Gemma: 140+. Fuzzy
+   matcher + alias map handles mishears. Tested with Hinglish.
+ - Path to production? Gemma is Apache 2.0, Firebase free tier, catalog is
+   configurable per shop. Pilot 100 shops in Mangalore tomorrow.
+
+
+8. TEAM WORKFLOW & REPO STATE (how we work)
+--------------------------------------------------------------------------------
+ BRANCHES:
+   main            = the product (always green: tests + assembleDebug)
+   person-a        = Preethesh's line (currently == main)
+   person-b-deepthi= Deepthi's full parallel implementation, FROZEN as
+                     plan-B (text-pipeline Gemini via generateContent +
+                     strict-JSON contract — fallback if Live API preview
+                     is flaky at the venue)
+
+ RULES:
+   - Nobody commits directly to main; work on your branch, merge after
+     tests pass. Nobody force-pushes main.
+   - EVERY prompt, change, and merge gets a dated entry in progress.md
+     (newest at bottom). Read it top-to-bottom before working — it is the
+     single source of truth for "what has been done".
+   - Trackers: person1.md (A), person2.md (B). Plan: KHAATA_MASTER_PLAN.md.
+   - Commits under each person's own GitHub identity via SSH. No AI
+     co-author trailers ever.
+   - Sync loop: git fetch origin -> read the other branch -> merge ->
+     resolve (progress.md conflicts: keep BOTH people's entries) ->
+     ./gradlew testDebugUnitTest assembleDebug -> push.
+
+ HISTORY IN ONE PARAGRAPH: Both people ran "build everything in one shot"
+ in parallel without seeing each other's pushes; both produced complete
+ apps. Merge decision: main keeps A's implementation (real Live API native
+ audio + FunctionDeclarations); B's tree preserved as plan-B. B verified
+ A's build on her machine, then did the first real-device test (Samsung
+ SM-S721B) and hardened SpeechInputManager (self-heal missing Hindi pack,
+ en-IN fallback, stale-recognizer guard). A set up Firebase end-to-end via
+ CLI and downloaded the 4.41 GB Gemma weights.
+
+ CURRENT STATUS (2026-07-09): ALL CODE + CLOUD SETUP DONE.
+ Remaining is hardware-only:
+   [ ] adb push gemma.task to the demo phone (A, when phone is plugged in)
+   [ ] Hindi speech pack primed on demo phone (tap mic on wifi, wait)
+   [ ] google-services.json handed to Deepthi privately (NOT in git)
+   [ ] E2E voice->bill run on the demo phone
+   [ ] Demo rehearsal x3 (B), charge everything to 100% (both)
+
+ NOT IN GIT (deliberately): app/google-services.json (API key, public
+ repo), models/gemma.task (4.41 GB > GitHub's 100 MB limit), .claude/,
+ build/, local.properties.
+================================================================================
+END OF BRIEF
+================================================================================
