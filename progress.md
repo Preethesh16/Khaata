@@ -86,6 +86,16 @@
 - Demo phone not yet connected; the moment it is: `adb push models/gemma.task /data/local/tmp/llm/gemma.task` (takes a few minutes over USB; phone needs ~5 GB free).
 - **ALL software + cloud setup is now DONE.** Remaining = hardware-only: phone push (A), offline Hindi/English speech packs on phone (B), demo rehearsal ×3 (B), charge everything (both).
 
+### 2026-07-09 20:15 — Person B (Deepthi)
+- **First real-device test** (Samsung SM-S721B via ADB): APK installs, launches, catalog seeds, UI works. Mic initially dead — root-caused via live logcat: `LANGUAGE_PACK_ERROR 13`, the phone has **no offline hi-IN speech pack**, and the **new Google app has removed the manual "Offline speech recognition" download menu** entirely. Also: this phone's only recognition services are on-device (no cloud recognizer service exists), so `EXTRA_PREFER_OFFLINE=false` doesn't buy anything by itself.
+- **`SpeechInputManager` hardened** (the only code change, 43 lines):
+  1. On error 13 (API 33+): `triggerModelDownload()` — app self-heals by requesting the hi-IN pack itself (verified in logs: `GoogleTTSRecognitionSrv#onTriggerModelDownload` fires).
+  2. While the pack is missing, **auto-fallback to en-IN recognition** (phone's voice language; handles Hinglish fine for our parser). Verified listening in logs (returns NO_MATCH when you speak too early — speak ~1s after tap).
+  3. `EXTRA_PREFER_OFFLINE` now set only when the device is actually offline.
+  4. Stale-recognizer guard (rapid re-taps were causing ERROR_SERVER_DISCONNECTED churn).
+- Google's MDD downloader is lazy about actually fetching the hi-IN pack (tried force-running its jobs via jobscheduler; still pending). **Do the same prep on the demo phone EARLY**: install app → tap mic once on wifi → leave it plugged in on wifi for a while → verify hi-IN works in airplane mode. If hi-IN pack never lands, en-IN fallback carries the demo.
+- E2E voice→bill confirmation still pending (phone was unplugged mid-test); UI/DB/TTS all verified working.
+
 ---
 
 ## HOW TO TEST & CONNECT THE GOOGLE STACK (read me, Deepthi)

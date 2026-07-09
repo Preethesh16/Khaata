@@ -2,6 +2,9 @@ package com.khaata.app.agent
 
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -27,10 +30,20 @@ class SpeechInputManager(private val context: Context) {
             onError("Speech recognition not available on this device")
             return
         }
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
+            // Force on-device recognition only when there is no internet
+            // (airplane-mode demo). Online, server-side recognition works
+            // without any language pack installed.
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, !isOnline())
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+        }
         val r = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer = r
         r.setRecognitionListener(object : RecognitionListener {
             override fun onResults(results: Bundle) {
+                if (recognizer !== r) return  // stale session (superseded by fallback)
                 val text = results
                     .getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()
@@ -39,7 +52,24 @@ class SpeechInputManager(private val context: Context) {
             }
 
             override fun onError(error: Int) {
+                if (recognizer !== r) return  // stale session (superseded by fallback)
                 Log.w("KhaataSTT", "recognizer error $error")
+                // Offline language pack missing (newer Google app has no manual
+                // download UI) — trigger the model download ourselves (API 33+).
+                if (error == ERROR_LANG_UNAVAILABLE && Build.VERSION.SDK_INT >= 33) {
+                    runCatching { r.triggerModelDownload(intent) }
+                        .onSuccess { Log.i("KhaataSTT", "triggered $languageTag model download") }
+                        .onFailure { Log.w("KhaataSTT", "model download trigger failed", it) }
+                    // While the pack downloads, fall back to a locale whose pack is
+                    // already on the phone (en-IN handles Hinglish fine).
+                    if (languageTag != FALLBACK_LANG) {
+                        Log.i("KhaataSTT", "falling back to $FALLBACK_LANG recognition")
+                        startListening(FALLBACK_LANG, onResult, onError)
+                    } else {
+                        onError("Voice model download ho raha hai — wifi pe 1-2 min ruko, phir dobara boliye")
+                    }
+                    return
+                }
                 onError(
                     when (error) {
                         SpeechRecognizer.ERROR_NO_MATCH,
@@ -57,17 +87,24 @@ class SpeechInputManager(private val context: Context) {
             override fun onPartialResults(partialResults: Bundle?) {}
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
-        }
         r.startListening(intent)
     }
 
     fun stop() {
         recognizer?.destroy()
         recognizer = null
+    }
+
+    private fun isOnline(): Boolean {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    companion object {
+        // SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE (API 33 constant, value 13)
+        private const val ERROR_LANG_UNAVAILABLE = 13
+        // en-IN understands Hinglish ("do kilo cheeni") well enough for the parser
+        private const val FALLBACK_LANG = "en-IN"
     }
 }
