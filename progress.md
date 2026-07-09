@@ -65,6 +65,16 @@
 - Good catch on the stray `.claude` tmp file — `.claude/` is gitignored now.
 - Tests + `assembleDebug` re-run green on the merged tree before push.
 
+### 2026-07-09 02:00 — Person A (Preethesh)
+- Prompt: "download gemma weights and set up firebase now".
+- **Firebase DONE (fully automated via firebase CLI):**
+  - Created project **`khaata-kirana`** (console: https://console.firebase.google.com/project/khaata-kirana/overview)
+  - Registered Android app `com.khaata.app` (App ID `1:887731890383:android:b0d451123a9954fc232fba`)
+  - Pulled `app/google-services.json` — **NOT committed** (public repo → API key abuse risk). It's **gitignored**; Deepthi: get the file from Preethesh directly (WhatsApp) or run `firebase apps:sdkconfig ANDROID 1:887731890383:android:b0d451123a9954fc232fba --project khaata-kirana` after `firebase login`.
+  - Enabled APIs: `generativelanguage.googleapis.com` (Gemini Developer API), `firebasevertexai.googleapis.com` (Firebase AI Logic), `firebaseml.googleapis.com`.
+  - Rebuilt with plugin active — BUILD SUCCESSFUL, `khaata-kirana` config baked into APK resources.
+- **Gemma weights: downloading** `gemma-3n-E4B-it-int4.task` (real size **4.41 GB**, not the plan's "~2GB") from a public HF mirror (official google/* repos are license-gated) → `models/gemma.task` (gitignored). After download + phone connected: `adb push models/gemma.task /data/local/tmp/llm/gemma.task`.
+
 ---
 
 ## HOW TO TEST & CONNECT THE GOOGLE STACK (read me, Deepthi)
