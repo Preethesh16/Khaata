@@ -81,6 +81,11 @@
   - Rebuilt with plugin active — BUILD SUCCESSFUL, `khaata-kirana` config baked into APK resources.
 - **Gemma weights: downloading** `gemma-3n-E4B-it-int4.task` (real size **4.41 GB**, not the plan's "~2GB") from a public HF mirror (official google/* repos are license-gated) → `models/gemma.task` (gitignored). After download + phone connected: `adb push models/gemma.task /data/local/tmp/llm/gemma.task`.
 
+### 2026-07-09 12:25 — Person A (Preethesh)
+- **Gemma weights DOWNLOADED**: `models/gemma.task` (gemma-3n-E4B-it-int4, 4.41 GB) on A's machine, size verified. Gitignored — stays local.
+- Demo phone not yet connected; the moment it is: `adb push models/gemma.task /data/local/tmp/llm/gemma.task` (takes a few minutes over USB; phone needs ~5 GB free).
+- **ALL software + cloud setup is now DONE.** Remaining = hardware-only: phone push (A), offline Hindi/English speech packs on phone (B), demo rehearsal ×3 (B), charge everything (both).
+
 ---
 
 ## HOW TO TEST & CONNECT THE GOOGLE STACK (read me, Deepthi)
